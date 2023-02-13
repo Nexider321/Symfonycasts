@@ -1,0 +1,30 @@
+version: '2'
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-server-81
+    command: --default-authentication-plugin=mysql_native_password
+    #        working_dir: /application
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: always
+    environment:
+      - MYSQL_USER=myrak
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=the_spacebar
+      - MYSQL_PASSWORD=secret
+    ports:
+      - "8082:3306"
+  website:
+    container_name: php81
+    build:
+      context: ./
+    volumes:
+      - .:/var/www/html
+    ports:
+      - 8001:80
+    depends_on:
+      - mysql
+
+volumes:
+    mysql-data:
