@@ -2,6 +2,11 @@
     {{ form_row(articleForm.title, {
         label: 'Article title'
     }) }}
+    {{ form_row(articleForm.imageFile, {
+        attr: {
+            'placeholder': 'Select a article image'
+        }
+    }) }}
     {{ form_row(articleForm.author) }}
     {{ form_row(articleForm.content) }}
 

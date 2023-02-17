@@ -6,7 +6,9 @@ use App\Entity\Article;
 use App\Form\ArticleFormType;
 use App\Repository\ArticleRepository;
 use App\Repository\UserRepository;
+use App\Service\UploaderHelper;
 use Doctrine\ORM\EntityManagerInterface;
+use Gedmo\Sluggable\Util\Urlizer;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,13 +24,21 @@ class ArticleAdminController extends AbstractController
      * @Route("/admin/article/new", name="admin_article_new")
      * @IsGranted("ROLE_ADMIN_ARTICLE")
      */
-    public function new(EntityManagerInterface $em, Request $request)
+    public function new(EntityManagerInterface $em, Request $request, UploaderHelper $uploaderHelper)
     {
             $form = $this->createForm(ArticleFormType::class);
 
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()){
                 $article = $form->getData();
+
+
+                $uploadedFile = $form['imageFile']->getData();
+                if ($uploadedFile) {
+                    $newFilename = $uploaderHelper->uploadArticleImage($uploadedFile);
+                    $article->setImageFilename($newFilename);
+                }
+
                 $em->persist($article);
                 $em->flush();
                 $this->addFlash('success', 'Article Created! Knowledge is power!');
@@ -47,7 +57,16 @@ class ArticleAdminController extends AbstractController
      */
     public function temporaryUploadAction(Request $request)
     {
-        dd($request->files->get('image'));
+        $uploadedFile = $request->files->get('image');
+        $destination = $this->getParameter('kernel.project_dir').'/public/uploads';
+
+        $originalFilename = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
+        $newFilename = Urlizer::urlize($originalFilename).'-'.uniqid().'.'.$uploadedFile->guessExtension();
+        dd($uploadedFile->move(
+            $destination,
+            $newFilename
+        ));
+
     }
 
     /**
@@ -68,6 +87,9 @@ class ArticleAdminController extends AbstractController
     }
 
 
+
+
+
     /**
      * @param EntityManagerInterface $em
      * @param Request $request
@@ -75,7 +97,7 @@ class ArticleAdminController extends AbstractController
      * @IsGranted("ROLE_ADMIN_ARTICLE")
      */
 
-    public function edit(Article $article, EntityManagerInterface $em, Request $request)
+    public function edit(Article $article, EntityManagerInterface $em, Request $request, UploaderHelper $uploaderHelper)
     {
         $form = $this->createForm(ArticleFormType::class, $article, [
             'include_published_at' => true
@@ -83,6 +105,13 @@ class ArticleAdminController extends AbstractController
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()){
+
+            $uploadedFile = $form['imageFile']->getData();
+            if ($uploadedFile) {
+
+                $newFilename = $uploaderHelper->uploadArticleImage($uploadedFile);
+                $article->setImageFilename($newFilename);
+            }
             $article = $form->getData();
             $em->persist($article);
             $em->flush();
@@ -96,6 +125,7 @@ class ArticleAdminController extends AbstractController
         return $this->render('article_admin/edit.html.twig', [
             'articleForm' => $form->createView()
         ]);
+
     }
 
     /**

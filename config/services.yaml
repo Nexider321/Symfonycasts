@@ -10,13 +10,14 @@ services:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
         public: false       # Allows optimizing the container by removing unused services; this also means
-                            # fetching services directly from the container via $container->get() won't work.
+                          # fetching services directly from the container via $container->get() won't work.
                             # The best practice is to be explicit about your dependencies anyway.
 
         # setup special, global autowiring rules
         bind:
             $markdownLogger: '@monolog.logger.markdown'
             $isDebug: '%kernel.debug%'
+            $uploadsPath: '%kernel.project_dir%/public/uploads'
 
     # custom aliases for autowiring
 #    Nexy\Slack\Client: '@nexy_slack.client'
@@ -39,4 +40,9 @@ services:
         tags:
             - { name: form.type_extension,
                 extended_type: Symfony\Component\Form\Extension\Core\Type\TextareaType }
-
+    App\Twig\AppExtension:
+        # or a complete definition:
+        lazy: true
+        tags:
+            - { name: 'proxy', interface: 'Twig\Extension\ExtensionInterface' }
+    Symfony\Component\Asset\Context\RequestStackContext: '@assets.context'
